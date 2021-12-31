@@ -2,7 +2,8 @@
   import ReferencedModelSummary from "./ReferencedModelSummary.svelte";
   export let models;
   export let prop;
-  let expanded = false;
+  export let showXml = true;
+  export let expanded = false;
   const findRefModel = (ref) => {
     let refArr = ref.split("/");
     return models.find((elem) => elem.name === refArr[refArr.length - 1]);
@@ -49,21 +50,21 @@
     </span>
   {:else}
     <span>[</span>
-    {#if "xml" in prop}
+    {#if showXml && "xml" in prop}
       <span class="property">
         <br />
         xml: OrderedMap&nbsp;
         {JSON.stringify(prop.xml)}
       </span>
     {/if}
-    {#if "$ref" in prop.items}
+    {#if "items" in prop && "$ref" in prop.items}
       <span
         ><br /><ReferencedModelSummary
           model={findRefModel(prop.items.$ref)}
           {models}
         /></span
       >
-    {:else if "type" in prop.items}
+    {:else if "items" in prop && "type" in prop.items}
       <span class="prop-type"><br />{prop.items.type}</span>
       {#if "xml" in prop.items}
         <span class="property primitive">
@@ -72,6 +73,8 @@
           {JSON.stringify(prop.items.xml)}
         </span>
       {/if}
+    {:else}
+      <ReferencedModelSummary model={prop} {models} />
     {/if}
     <span>]</span>
   {/if}

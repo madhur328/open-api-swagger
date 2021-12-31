@@ -1,8 +1,11 @@
 <script>
+  import { marked } from "marked";
+  import DOMPurify from "dompurify";
   export let model;
   export let models;
   import ReferencedModelSummary from "./ReferencedModelSummary.svelte";
-  let expanded = false;
+  import ReferencedArraySummary from "./ReferencedArraySummary.svelte";
+  export let expanded = false;
   const findRefModel = (ref) => {
     let refArr = ref.split("/");
     return models.find((elem) => elem.name === refArr[refArr.length - 1]);
@@ -16,9 +19,11 @@
     }}
     class="model-box-control"
   >
-    <span class="model model-title">
-      {model.name}
-    </span>
+    {#if "name" in model}
+      <span class="model model-title">
+        {model.name}
+      </span>
+    {/if}
     <span class="model-toggle">
       <img src="/icons/arrow-right.svg" alt="" class="icon" />
     </span>
@@ -31,9 +36,11 @@
     }}
     class="model-box-control"
   >
-    <span class="model model-title">
-      {model.name}
-    </span>
+    {#if "name" in model}
+      <span class="model model-title">
+        {model.name}
+      </span>
+    {/if}
     <span class="model-toggle expanded">
       <img src="/icons/arrow-right.svg" alt="" class="icon" />
     </span>
@@ -42,27 +49,81 @@
   <span class="inner-object">
     <table class="model">
       <tbody>
-        {#each Object.keys(model.properties) as prop, j}
+        {#if "properties" in model}
+          {#each Object.keys(model.properties) as prop, j}
+            <tr class="property-row">
+              <td class="prop-name"
+                >{prop}{#if "required" in model && model.required.includes(prop)}<span
+                    class="star">*</span
+                  >{/if}</td
+              >
+              <td>
+                <span class="model">
+                  {#if "$ref" in model.properties[prop]}
+                    <ReferencedModelSummary
+                      model={findRefModel(model.properties[prop].$ref)}
+                      {models}
+                    />
+                  {:else if "type" in model.properties[prop]}
+                    <span class="prop">
+                      <span class="prop-type"
+                        >{model.properties[prop].type}</span
+                      >{#if "format" in model.properties[prop]}<span
+                          class="prop-format"
+                          >(${model.properties[prop].format})</span
+                        >
+                      {/if}
+                      {#if "example" in model.properties[prop]}
+                        <span class="property primitive"
+                          ><br />example: {model.properties[prop].example}</span
+                        >
+                      {/if}
+                      {#if "description" in model.properties[prop]}
+                        <div class="markdown">
+                          {@html DOMPurify.sanitize(
+                            marked.parse(model.properties[prop].description)
+                          )}
+                        </div>
+                      {/if}
+                      {#if "enum" in model.properties[prop]}
+                        <span class="prop-enum">
+                          Enum:
+                          <br />
+                          <ReferencedArraySummary
+                            prop={model.properties[prop]}
+                            {models}
+                          />
+                        </span>
+                      {/if}
+                    </span>
+                  {/if}
+                </span>
+              </td>
+            </tr>
+          {/each}
+        {:else if "additionalProperties" in model}
           <tr class="property-row">
-            <td class="prop-name">{prop}</td>
+            <td class="prop-name">{"< * >"}</td>
             <td>
               <span class="model">
-                {#if "$ref" in model.properties[prop]}
+                {#if "$ref" in model.additionalProperties}
                   <ReferencedModelSummary
-                    model={findRefModel(model.properties[prop]["$ref"])}
+                    model={findRefModel(model.additionalProperties.$ref)}
                     {models}
                   />
-                {:else if "type" in model.properties[prop]}
+                {:else if "type" in model.additionalProperties}
                   <span class="prop">
-                    <span class="prop-type">{model.properties[prop].type}</span>
-                    {#if "format" in model.properties[prop]}
+                    <span class="prop-type"
+                      >{model.additionalProperties.type}</span
+                    >
+                    {#if "format" in model.additionalProperties}
                       <span class="prop-format"
-                        >(${model.properties[prop].format})</span
+                        >(${model.additionalProperties.format})</span
                       >
                     {/if}
-                    {#if "example" in model.properties[prop]}
+                    {#if "example" in model.additionalProperties}
                       <span class="property primitive"
-                        >example: {model.properties[prop].example}</span
+                        >example: {model.additionalProperties.example}</span
                       >
                     {/if}
                   </span>
@@ -70,7 +131,7 @@
               </span>
             </td>
           </tr>
-        {/each}
+        {/if}
       </tbody>
     </table>
   </span>
@@ -109,6 +170,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: transform 0.15s ease-in;
   }
   .model-toggle img.icon {
     height: 20px;
@@ -137,5 +199,8 @@
   }
   .model .property.primitive {
     color: #6b6b6b;
+  }
+  table.model tr.property-row .star {
+    color: red;
   }
 </style>
