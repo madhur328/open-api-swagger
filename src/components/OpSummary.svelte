@@ -414,7 +414,6 @@
   }
   .opblock .opblock-summary {
     align-items: center;
-    cursor: pointer;
     display: flex;
     padding: 5px;
   }

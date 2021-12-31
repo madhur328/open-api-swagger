@@ -112,13 +112,12 @@
   </div>
   <div class="padded-container">
     <div class="models" class:is-open={modelToggled}>
-      <h4>
-        <button
-          class="models-control"
-          on:click={() => {
-            modelToggled = !modelToggled;
-          }}
-        >
+      <h4
+        on:click={() => {
+          modelToggled = !modelToggled;
+        }}
+      >
+        <button class="models-control">
           <span class="model-heading">Models</span>
           <img
             class="icon"
