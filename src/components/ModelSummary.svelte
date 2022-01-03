@@ -4,10 +4,7 @@
   import DOMPurify from "dompurify";
   import { marked } from "marked";
   export let models;
-  let modelIndexToggle = [];
-  for (let i = 0; i < models.length; i++) {
-    modelIndexToggle.push(false);
-  }
+  export let modelIndexToggle;
   const dataToggle = (i) => {
     modelIndexToggle[i] = !modelIndexToggle[i];
   };
@@ -20,10 +17,10 @@
 {#each models as model, i}
   <div class="model-container">
     <span class="model-box">
-      {#if modelIndexToggle.length && modelIndexToggle[i]}
+      {#if modelIndexToggle[i]}
         <div class="model-box">
           <button on:click={() => dataToggle(i)} class="model-box-control">
-            <span class="model model-title">{model.name}</span>
+            <span id={`model${i}`} class="model model-title">{model.name}</span>
             <span class="model-toggle expanded">
               <img src="/icons/arrow-right.svg" alt="" class="icon" />
             </span>

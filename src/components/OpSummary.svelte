@@ -5,10 +5,7 @@
   import { marked } from "marked";
   export let opData;
   export let models;
-  let opDataToggle = [];
-  for (let i = 0; i < opData.length; i++) {
-    opDataToggle.push(false);
-  }
+  let opDataToggle = new Array(opData.length).fill(false);
   const dataToggle = (i) => {
     opDataToggle[i] = !opDataToggle[i];
   };
@@ -22,7 +19,7 @@
   {#each opData as op, i}
     <div
       class="opblock"
-      class:is-open={opDataToggle.length && opDataToggle[i]}
+      class:is-open={opDataToggle[i]}
       class:opblock-deprecated={op.deprecated === true}
       class:opblock-post={!op.deprecated === true && op.http_method === "post"}
       class:opblock-get={!op.deprecated === true && op.http_method === "get"}
@@ -42,7 +39,7 @@
           </div>
           <img
             class="icon svelte-1aw6qgd"
-            class:expanded={opDataToggle.length && opDataToggle[i]}
+            class:expanded={opDataToggle[i]}
             src="/icons/arrow-down.svg"
             alt=""
           />
@@ -53,7 +50,7 @@
           </button>
         {/if}
       </div>
-      {#if opDataToggle.length && opDataToggle[i]}
+      {#if opDataToggle[i]}
         <div class="opblock-body">
           {#if op.deprecated === true}
             <h4 class="opblock-title-deprecated">Warning: Deprecated</h4>

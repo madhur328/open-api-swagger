@@ -1,5 +1,6 @@
 <script>
   import OpSummary from "./OpSummary.svelte";
+  import LeftPanel from "./LeftPanel.svelte";
   import ModelSummary from "./ModelSummary.svelte";
   import docJson from "../data/swagger.json";
   import DOMPurify from "dompurify";
@@ -8,14 +9,14 @@
   let infoDescription = marked.parse(docJson.info.description);
   infoDescription = DOMPurify.sanitize(infoDescription);
   let tags = [];
-  let tagIndexToggled = [];
+  let tagIndexToggled = new Array(docJson.tags.length).fill(false);
+  tagIndexToggled[0] = true;
   let models = [];
-  let modelToggled = false;
+  let modelToggled = true;
   let paths = docJson.paths;
   let pathUrls = Object.keys(paths);
   docJson.tags.forEach((tag) => {
     let opData = [];
-    tagIndexToggled.push(false);
     let tagDesc = marked.parse(tag.description);
     tagDesc = DOMPurify.sanitize(tagDesc);
     pathUrls.forEach((url) => {
@@ -51,85 +52,100 @@
   const indexDataToggle = (i) => {
     tagIndexToggled[i] = !tagIndexToggled[i];
   };
+  let modelIndexToggle = new Array(models.length).fill(false);
 </script>
 
 <div class="appContainer">
-  <div class="padded-container">
-    <div class="info">
-      <h2 class="title">
-        {docJson.info.title}<small><pre>{docJson.info.version}</pre></small>
-      </h2>
-      <div class="description">{@html infoDescription}</div>
-    </div>
+  <div class="left-panel">
+    <LeftPanel
+      {docJson}
+      bind:tagIndexToggled
+      bind:modelToggled
+      bind:modelIndexToggle
+    />
   </div>
-  <div class="scheme-container">
-    <label for="schemes">
-      <span class="schemes-title">Schemes</span>
-      <select>
-        {#each docJson.schemes as scheme}
-          <option value={scheme}>{scheme}</option>
+  <div class="main-app">
+    <div class="padded-container">
+      <div class="info">
+        <h2 class="title">
+          {docJson.info.title}<small><pre>{docJson.info.version}</pre></small>
+        </h2>
+        <div class="description">
+          <div class="markdown">{@html infoDescription}</div>
+        </div>
+      </div>
+    </div>
+    <div class="scheme-container">
+      <label for="schemes">
+        <span class="schemes-title">Schemes</span>
+        <select>
+          {#each docJson.schemes as scheme}
+            <option value={scheme}>{scheme}</option>
+          {/each}
+        </select>
+      </label>
+      <div class="auth-wrapper">
+        <button class="btn authorize unlocked">
+          <span>Authorize</span>
+          <img class="icon lock" src="/icons/lock-open-green.svg" alt="" />
+        </button>
+      </div>
+    </div>
+    <div class="padded-container">
+      <div class="tags">
+        {#each tags as tag, i}
+          <h3
+            id={`tag${i}`}
+            class="tag"
+            on:click={() => {
+              indexDataToggle(i);
+            }}
+          >
+            <div>{tag.name}</div>
+            <small>{@html tag.description}</small>
+            {#if "externalDocs" in tag}
+              <div>
+                <small on:click|stopPropagation>
+                  {tag.externalDocs.description}:
+                  <a href={tag.externalDocs.url}>{tag.externalDocs.url}</a>
+                </small>
+              </div>
+            {/if}
+            <img
+              class="icon"
+              class:expanded={tagIndexToggled[i]}
+              src="/icons/arrow-down.svg"
+              alt=""
+            />
+          </h3>
+          {#if tagIndexToggled[i]}
+            <OpSummary opData={tag.opData} {models} />
+          {/if}
         {/each}
-      </select>
-    </label>
-    <div class="auth-wrapper">
-      <button class="btn authorize unlocked">
-        <span>Authorize</span>
-        <img class="icon lock" src="/icons/lock-open-green.svg" alt="" />
-      </button>
+      </div>
     </div>
-  </div>
-  <div class="padded-container">
-    <div class="tags">
-      {#each tags as tag, i}
-        <h3
-          class="tag"
+    <div class="padded-container">
+      <div class="models" class:is-open={modelToggled}>
+        <h4
+          id="model"
           on:click={() => {
-            indexDataToggle(i);
+            modelToggled = !modelToggled;
           }}
         >
-          <div>{tag.name}</div>
-          <small>{@html tag.description}</small>
-          {#if "externalDocs" in tag}
-            <div>
-              <small on:click|stopPropagation>
-                {tag.externalDocs.description}:
-                <a href={tag.externalDocs.url}>{tag.externalDocs.url}</a>
-              </small>
-            </div>
-          {/if}
-          <img
-            class="icon"
-            class:expanded={tagIndexToggled.length && tagIndexToggled[i]}
-            src="/icons/arrow-down.svg"
-            alt=""
-          />
-        </h3>
-        {#if tagIndexToggled.length && tagIndexToggled[i]}
-          <OpSummary opData={tag.opData} {models} />
+          <button class="models-control">
+            <span class="model-heading">Models</span>
+            <img
+              class="icon"
+              class:expanded={modelToggled}
+              src="/icons/arrow-down.svg"
+              alt=""
+            />
+          </button>
+        </h4>
+        {#if modelToggled}
+          <ModelSummary {models} bind:modelIndexToggle />
         {/if}
-      {/each}
-    </div>
-  </div>
-  <div class="padded-container">
-    <div class="models" class:is-open={modelToggled}>
-      <h4
-        on:click={() => {
-          modelToggled = !modelToggled;
-        }}
-      >
-        <button class="models-control">
-          <span class="model-heading">Models</span>
-          <img
-            class="icon"
-            class:expanded={modelToggled}
-            src="/icons/arrow-down.svg"
-            alt=""
-          />
-        </button>
-      </h4>
-      {#if modelToggled}
-        <ModelSummary {models} />
-      {/if}
+      </div>
     </div>
   </div>
 </div>
@@ -171,6 +187,29 @@
     margin: 0 auto;
     max-width: 1460px;
     width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+  }
+  .left-panel {
+    width: 20%;
+    background-color: #f4f6fa;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+  }
+  .main-app {
+    margin-left: 20%;
+    flex-basis: 80%;
+  }
+  @media (max-width: 1000px) {
+    .left-panel {
+      width: 30%;
+    }
+    .main-app {
+      margin-left: 30%;
+      flex-basis: 70%;
+    }
   }
   .padded-container {
     padding: 0 20px;
