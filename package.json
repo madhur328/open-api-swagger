@@ -21,6 +21,7 @@
   "dependencies": {
     "dompurify": "^2.3.4",
     "marked": "^4.0.8",
+    "number-to-text": "^0.3.9",
     "sirv-cli": "^1.0.0"
   }
 }

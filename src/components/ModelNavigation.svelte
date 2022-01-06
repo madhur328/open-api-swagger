@@ -1,13 +1,12 @@
 <script>
-  export let model_keys;
   export let modelToggled;
   export let modelIndexToggle;
   export let models;
-  let active_tab = new Array(model_keys.length).fill(false);
+  let active_tab = new Array(models.length).fill(false);
   active_tab[0] = true;
 </script>
 
-{#each model_keys as model_name, i}
+{#each models as model, i}
   <a
     on:click={() => {
       modelToggled = true;
@@ -26,7 +25,7 @@
       class:first={i === 0}
       class:last={i === active_tab.length - 1}
     >
-      {model_name}
+      {model.name}
     </h2>
   </a>
 {/each}
@@ -39,6 +38,7 @@
     color: #959ba2;
     padding: 5px 5px 5px 0;
     cursor: pointer;
+    font-weight: 500;
   }
   .model-name::before {
     content: "";

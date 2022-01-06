@@ -139,7 +139,6 @@
     font-weight: 700;
   }
   .tab li {
-    color: #3b4151;
     cursor: pointer;
     font-family: sans-serif;
     font-size: 12px;
@@ -161,16 +160,16 @@
     padding: 0;
   }
   .tab li:first-of-type:after {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.2);
     content: "";
     height: 100%;
     position: absolute;
     right: 6px;
-    top: 0;
+    top: -1px;
     width: 1px;
   }
   .model-box {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgb(211, 218, 225);
     border-radius: 4px;
     display: inline-block;
     padding: 10px;
@@ -180,7 +179,7 @@
     overflow-x: auto;
     min-height: 6em;
     padding: 0.5em;
-    background: rgb(51, 51, 51);
+    background: #272e32;
     color: white;
   }
   .prop-type {

@@ -2,17 +2,19 @@
   import OpSummary from "./OpSummary.svelte";
   import LeftPanel from "./LeftPanel.svelte";
   import ModelSummary from "./ModelSummary.svelte";
+  import RightModal from "./RightModal.svelte";
   import docJson from "../data/swagger.json";
   import DOMPurify from "dompurify";
+  import numberToText from "number-to-text";
+  import "number-to-text/converters/en-us";
   import { marked } from "marked";
   let references = docJson.definitions;
   let infoDescription = marked.parse(docJson.info.description);
   infoDescription = DOMPurify.sanitize(infoDescription);
   let tags = [];
-  let tagIndexToggled = new Array(docJson.tags.length).fill(false);
-  tagIndexToggled[0] = true;
   let models = [];
   let modelToggled = true;
+  let base_path = docJson.host + docJson.basePath;
   let paths = docJson.paths;
   let pathUrls = Object.keys(paths);
   docJson.tags.forEach((tag) => {
@@ -26,6 +28,7 @@
             if (tagName === tag.name) {
               opData.push({
                 ...paths[url][op],
+                base_path,
                 url,
                 http_method: op,
               });
@@ -49,22 +52,34 @@
   modelNames.forEach((modelName) => {
     models.push({ ...references[modelName], name: modelName });
   });
-  const indexDataToggle = (i) => {
-    tagIndexToggled[i] = !tagIndexToggled[i];
-  };
   let modelIndexToggle = new Array(models.length).fill(false);
+  let opDataToggle = new Array(tags.length).fill(false);
+  let modal = {
+    show: false,
+    arg: null,
+    props: null,
+    modalShow(arg, props) {
+      modal = { ...modal, show: true, arg, props };
+    },
+  };
 </script>
 
 <div class="appContainer">
+  <RightModal bind:modal>
+    <svelte:component this={modal.arg} {...modal.props} />
+  </RightModal>
   <div class="left-panel">
     <LeftPanel
-      {docJson}
-      bind:tagIndexToggled
+      {tags}
+      {models}
+      title={docJson.info.title}
       bind:modelToggled
       bind:modelIndexToggle
+      bind:opDataToggle
+      bind:modal
     />
   </div>
-  <div class="main-app">
+  <div class="main-app" class:modal-open={modal.show}>
     <div class="padded-container">
       <div class="info">
         <h2 class="title">
@@ -72,55 +87,33 @@
         </h2>
         <div class="description">
           <div class="markdown">{@html infoDescription}</div>
-        </div>
-      </div>
-    </div>
-    <div class="scheme-container">
-      <label for="schemes">
-        <span class="schemes-title">Schemes</span>
-        <select>
-          {#each docJson.schemes as scheme}
-            <option value={scheme}>{scheme}</option>
+          <h3>
+            The docs are organized into {numberToText
+              .convertToText(tags.length + 1)
+              .toLowerCase()} main groups:
+          </h3>
+          {#each tags as tag, i}
+            <li><a href={`#tag${i}`}>{tag.name}</a></li>
           {/each}
-        </select>
-      </label>
-      <div class="auth-wrapper">
-        <button class="btn authorize unlocked">
-          <span>Authorize</span>
-          <img class="icon lock" src="/icons/lock-open-green.svg" alt="" />
-        </button>
+          <li><a href="#model">Models</a></li>
+        </div>
       </div>
     </div>
     <div class="padded-container">
       <div class="tags">
+        <h3>Reference</h3>
         {#each tags as tag, i}
-          <h3
-            id={`tag${i}`}
-            class="tag"
-            on:click={() => {
-              indexDataToggle(i);
-            }}
-          >
-            <div>{tag.name}</div>
-            <small>{@html tag.description}</small>
-            {#if "externalDocs" in tag}
-              <div>
-                <small on:click|stopPropagation>
-                  {tag.externalDocs.description}:
-                  <a href={tag.externalDocs.url}>{tag.externalDocs.url}</a>
-                </small>
-              </div>
-            {/if}
-            <img
-              class="icon"
-              class:expanded={tagIndexToggled[i]}
-              src="/icons/arrow-down.svg"
-              alt=""
-            />
+          <h3 id={`tag${i}`} class="tag">
+            <div class="tag-name">{tag.name} Endpoints</div>
           </h3>
-          {#if tagIndexToggled[i]}
-            <OpSummary opData={tag.opData} {models} />
-          {/if}
+          <small>{@html tag.description}</small>
+          <OpSummary
+            opData={tag.opData}
+            {models}
+            tagIndex={i}
+            bind:opDataToggle
+            bind:modal
+          />
         {/each}
       </div>
     </div>
@@ -151,37 +144,6 @@
 </div>
 
 <style>
-  select {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background: #f7f7f7 url("/icons/arrow-down.svg") right 10px center no-repeat;
-    background-size: 10px;
-    border: 2px solid #41444e;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 25%);
-    color: #3b4151;
-    font-family: sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    padding: 5px 40px 5px 10px;
-    margin: 0;
-  }
-  .btn {
-    background: transparent;
-    border: 2px solid gray;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
-    color: #3b4151;
-    font-family: sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    padding: 5px 23px;
-    transition: all 0.3s;
-  }
-  .btn:hover {
-    box-shadow: 0 0 5px rgb(0 0 0 / 30%);
-  }
   .appContainer {
     box-sizing: border-box;
     margin: 0 auto;
@@ -189,36 +151,54 @@
     width: 100%;
     display: flex;
     flex-wrap: nowrap;
+    align-items: stretch;
   }
   .left-panel {
-    width: 20%;
+    width: 265px;
     background-color: #f4f6fa;
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%;
+    overflow: scroll;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .left-panel::-webkit-scrollbar {
+    display: none;
   }
   .main-app {
-    margin-left: 20%;
-    flex-basis: 80%;
+    flex-basis: calc(100% - 260px);
   }
-  @media (max-width: 1000px) {
-    .left-panel {
-      width: 30%;
-    }
-    .main-app {
-      margin-left: 30%;
-      flex-basis: 70%;
-    }
+  .main-app.modal-open {
+    flex-basis: calc(50% - 130px);
   }
   .padded-container {
     padding: 0 20px;
   }
   .appContainer .info {
     margin: 50px 0;
+    color: #3b4151;
   }
   .info .description {
     margin-bottom: 5px;
+  }
+  .info .description .markdown {
+    color: #a1a7ad;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .info .description h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 20px 0;
+    color: #4e5358;
+  }
+  .info .description li {
+    color: #4a93e8;
+    font-size: 16px;
+    margin-left: 10px;
+    margin-bottom: 10px;
+  }
+  .info .description li a {
+    text-transform: capitalize;
+    color: #4a93e8;
   }
   .info .title small {
     background: #7d8492;
@@ -240,81 +220,39 @@
   .info pre {
     font-size: 14px;
   }
-  .scheme-container {
-    background: #fff;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 15%);
-    margin: 0 0 20px;
-    padding: 30px 20px;
-    align-items: center;
-    display: flex;
-  }
-  .scheme-container > label {
-    color: #3b4151;
-    display: flex;
-    flex-direction: column;
-    font-family: sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    margin: -20px 15px 0 0;
-  }
-  .scheme-container > label span {
-    font-family: sans-serif;
-    font-weight: 700;
-  }
-  .scheme-container > label select {
-    min-width: 130px;
-    text-transform: uppercase;
-  }
-  .auth-wrapper {
-    display: flex;
-    flex: 1;
-    justify-content: flex-end;
-  }
-  .auth-wrapper .authorize {
-    margin-right: 10px;
-    padding-right: 20px;
-  }
-  .btn.authorize {
-    background-color: transparent;
-    border-color: #49cc90;
-    color: #49cc90;
-    display: inline;
-    line-height: 1;
-    cursor: pointer;
-  }
-  .btn.authorize span {
-    font-family: sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    float: left;
-    padding: 4px 20px 0 0;
-  }
   .appContainer .title {
     color: #3b4151;
     font-family: sans-serif;
     font-size: 36px;
     margin: 0;
   }
+  .tags .tag-name {
+    text-transform: capitalize;
+  }
+  .tags > h3:first-child {
+    color: #92959b;
+    margin-bottom: 0;
+    font-size: 14px;
+    padding-left: 10px;
+  }
   .tag {
-    display: flex;
     font-size: 24px;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     margin: 0 0 5px;
-    align-items: center;
-    border-bottom: 1px solid rgba(59, 65, 81, 0.3);
+    border-bottom: 1px solid rgba(59, 65, 81, 0.1);
     cursor: pointer;
     display: flex;
     padding: 10px 20px 10px 10px;
     transition: all 0.2s;
   }
-  .tag small {
+  .tag + small {
     display: inline-block;
     flex: 1;
-    color: #3b4151;
+    color: #a1a7ad;
     font-family: sans-serif;
-    font-size: 14px;
-    font-weight: 400;
+    font-size: 16px;
+    font-weight: 500;
     padding: 0 10px;
   }
   .icon {
@@ -322,11 +260,6 @@
     height: 15px;
     cursor: pointer;
     transition: all 0.4s;
-  }
-  .icon.lock {
-    transform: rotateY(180deg);
-    width: 20px;
-    height: 20px;
   }
   .models-control .icon {
     transition: none;
