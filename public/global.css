@@ -62,7 +62,7 @@ span {
   font-size: 12px;
   font-weight: 600;
 }
-.desc.content .markdown p {
+.content .markdown p {
   margin: 0;
 }
 pre {

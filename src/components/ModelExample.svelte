@@ -170,9 +170,10 @@
   }
   .model-box {
     background: rgb(211, 218, 225);
-    border-radius: 4px;
+    min-height: 6em;
+    width: 100%;
     display: inline-block;
-    padding: 10px;
+    padding: 0.5em;
   }
   .highlight-code {
     display: block;

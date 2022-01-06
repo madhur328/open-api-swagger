@@ -203,4 +203,8 @@
   table.model tr.property-row .star {
     color: red;
   }
+  .brace-open,
+  .brace-close {
+    color: black;
+  }
 </style>

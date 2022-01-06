@@ -240,13 +240,17 @@
       <div class="attrib-table">
         {#if op.parameters.length === 0}
           <span class="no-params">No Parameters</span>
+        {:else if op.parameters.find((elem) => elem.in !== "header") === undefined}
+          <span class="no-params">No Parameters</span>
         {:else}
           <div class="attrib">Attribute</div>
           <div class="desc">Description</div>
           {#each op.parameters as param}
             {#if param.in !== "header"}
               <div class="attrib content">
-                <div class="param__name">{param.name}</div>
+                <div class="param__name">
+                  {param.name}{#if param.required}<span>*</span>{/if}
+                </div>
                 <div class="param__type">
                   {#if "type" in param}
                     {param.type}
@@ -324,10 +328,137 @@
     </div>
     <div><button class="try btn">Try</button></div>
   </div>
-  <div class="header-block" />
+  <div class="header-block">
+    <h3 class="header">Headers</h3>
+    <div class="header-content">
+      {#if op.parameters.find((elem) => elem.in === "header") === undefined}
+        <span class="no-params">No Parameters</span>
+      {:else}
+        <div class="container-colored">
+          {#each op.parameters as param, i}
+            {#if param.in === "header"}
+              <div class="param-content">
+                <span class="param-name">{param.name}</span><span>: </span><span
+                  class="param-type">{param.type}</span
+                >
+              </div>
+            {/if}
+          {/each}
+        </div>
+      {/if}
+    </div>
+  </div>
+  <div class="responses-block">
+    <h3 class="response">Response</h3>
+    <div class="response-codes">
+      <div class="res-table">
+        <div class="res-code">Code</div>
+        <div class="res-desc">Description</div>
+        {#each Object.keys(op.responses) as res_code}
+          <div class="res-code content">{res_code}</div>
+          <div class="res-desc content">
+            <div class="markdown">
+              {@html DOMPurify.sanitize(
+                marked.parse(op.responses[res_code].description)
+              )}
+            </div>
+            {#if "schema" in op.responses[res_code]}
+              <ModelExample schema={op.responses[res_code].schema} {models} />
+            {/if}
+            {#if "headers" in op.responses[res_code]}
+              <div class="headers-wrapper">
+                <h4 class="headers__title">Headers:</h4>
+                <table class="headers">
+                  <thead>
+                    <tr class="header-row">
+                      <th class="header-col">Name</th>
+                      <th class="header-col">Description</th>
+                      <th class="header-col">Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each Object.keys(op.responses[res_code].headers) as header}
+                      <tr>
+                        <td class="header-col">{header}</td>
+                        <td class="header-col">
+                          <div class="markdown">
+                            {@html DOMPurify.sanitize(
+                              marked.parse(
+                                op.responses[res_code].headers[header]
+                                  .description
+                              )
+                            )}
+                          </div>
+                        </td>
+                        <td class="header-col"
+                          >{op.responses[res_code].headers[header].type}</td
+                        >
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
+  .request-container .responses-block .response-codes .res-table {
+    margin: 0 30px 30px 30px;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .request-container .responses-block .response-codes .res-table .res-code {
+    flex: 1;
+    min-width: 30%;
+    text-align: right;
+    padding: 10px 20px 10px 0;
+    border-bottom: 1px solid rgba(180, 185, 193, 0.2);
+    font-size: 12px;
+    color: #ffffff;
+    font-family: "Roboto mono";
+    font-weight: 200;
+  }
+  .request-container
+    .responses-block
+    .response-codes
+    .res-table
+    .res-code.content {
+    font-size: 13px;
+    color: #6d747d;
+    font-weight: 400;
+  }
+  .request-container
+    .responses-block
+    .response-codes
+    .res-table
+    .res-desc.content {
+    font-size: 13px;
+  }
+  .request-container
+    .responses-block
+    .response-codes
+    .res-table
+    .res-desc.content
+    .markdown {
+    color: #6d747d;
+    font-weight: 400;
+  }
+  .request-container .responses-block .response-codes .res-table .res-desc {
+    flex: 2;
+    min-width: 60%;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(180, 185, 193, 0.2);
+    font-size: 12px;
+    color: #ffffff;
+    font-family: "Roboto mono";
+    font-weight: 200;
+  }
+
   .request-container h3 {
     font-size: 20px;
     margin-left: 30px;
@@ -385,7 +516,9 @@
   .request-container .request-block {
     margin-top: 50px;
   }
-  .request-container .request-block .request {
+  .request-container .request-block .request,
+  .request-container .header-block .header,
+  .request-container .responses-block .response {
     font-size: 14px;
     font-weight: 400;
     font-family: "Roboto mono";
@@ -395,11 +528,7 @@
     display: flex;
     flex-wrap: wrap;
   }
-  .request-container
-    .request-block
-    .request-attributes
-    .attrib-table
-    .no-params {
+  .request-container .no-params {
     font-family: "Roboto Mono";
     font-size: 14px;
     font-weight: 200;
@@ -409,7 +538,7 @@
     flex: 1;
     min-width: 30%;
     text-align: right;
-    padding: 0 20px 10px 0;
+    padding: 10px 20px 10px 0;
     border-bottom: 1px solid rgba(180, 185, 193, 0.2);
     font-size: 12px;
     color: #ffffff;
@@ -454,7 +583,7 @@
   .request-container .request-block .request-attributes .attrib-table .desc {
     flex: 2;
     min-width: 60%;
-    padding-bottom: 20px;
+    padding: 10px 0;
     border-bottom: 1px solid rgba(180, 185, 193, 0.2);
     font-size: 12px;
     color: #ffffff;
@@ -530,37 +659,21 @@
   .request-container .try-block .try.btn:hover {
     background-color: #ffffff29;
   }
-  .opblock-title-deprecated {
-    color: #3b4151;
-    font-family: sans-serif;
-    font-size: 12px;
-    margin: 0 0 5px;
-    padding: 15px 20px;
+  .request-container .header-block {
+    margin-bottom: 30px;
   }
-  .opblock-description-wrapper {
-    color: #3b4151;
-    font-family: sans-serif;
-    font-size: 14px;
-    margin: 0 0 5px;
-    padding: 15px 20px;
+  .request-container .header-block .header-content {
+    margin: 0 30px;
   }
-  .parameter-block .parameter-block-header {
-    align-items: center;
-    background: hsla(0, 0%, 100%, 0.8);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
-    display: flex;
-    min-height: 50px;
-    padding: 8px 20px;
+  .request-container .header-block .header-content .container-colored {
+    background-color: #272e32;
+    padding: 15px;
   }
-  .opblock .parameter-block-header .opblock-title {
-    color: #3b4151;
-    flex: 1;
-    font-family: sans-serif;
-    font-size: 14px;
-    margin: 0;
+  .request-container .header-block .header-content .param-name {
+    color: #5d86b2;
   }
-  .table-container {
-    padding: 20px;
+  .request-container .header-block .header-content .param-type {
+    color: #7eaa9a;
   }
   table {
     border-collapse: collapse;
@@ -569,59 +682,24 @@
   }
   table thead tr th,
   table thead tr td {
-    border-bottom: 1px solid rgba(59, 65, 81, 0.2);
-    color: #3b4151;
+    border-bottom: 1px solid rgba(59, 65, 81, 1);
+    color: #6d747d;
     font-family: sans-serif;
     font-size: 12px;
     font-weight: 700;
     padding: 12px 0;
     text-align: left;
   }
-  table tbody tr td:first-of-type {
+  table tbody tr td {
     vertical-align: top;
     min-width: 6em;
     padding: 10px 0;
   }
-  .parameters-col_description {
-    margin-bottom: 2em;
-    width: 99%;
+  .param__name span {
+    vertical-align: super;
+    color: lightgrey;
   }
-  .parameter__name {
-    color: #3b4151;
-    font-family: sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    margin-right: 0.75em;
-    display: flex;
-  }
-  .parameter__name.required {
-    font-weight: 700;
-  }
-  .parameter__name.required span {
-    color: red;
-  }
-  .parameter__name.required:after {
-    color: rgba(255, 0, 0, 0.6);
-    content: "required";
-    font-size: 10px;
-    padding: 5px;
-    position: relative;
-    top: -6px;
-  }
-  .parameter__type {
-    color: #3b4151;
-    font-family: monospace;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 0;
-  }
-  .parameter__in {
-    color: gray;
-    font-family: monospace;
-    font-size: 12px;
-    font-style: italic;
-    font-weight: 600;
-  }
+
   input[type="file"],
   input[type="text"] {
     background: #fff;
@@ -631,71 +709,28 @@
     min-width: 200px;
     padding: 6px;
   }
-  .parameters-col_description input[type="text"] {
-    max-width: 340px;
-    width: 100%;
-  }
-  .parameters-col_description select {
-    border-width: 1px;
-  }
   input[disabled] {
     background-color: #fafafa;
     color: #888;
     cursor: not-allowed;
   }
-  .responses-block-header {
-    align-items: center;
-    background: hsla(0, 0%, 100%, 0.8);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
-    display: flex;
-    min-height: 50px;
-    padding: 8px 20px;
-  }
-  .responses-block-header h4 {
-    color: #3b4151;
-    flex: 1;
-    font-family: sans-serif;
-    font-size: 14px;
-    margin: 0;
-  }
-  .responses-block-header > label {
-    align-items: center;
-    color: #3b4151;
-    display: flex;
-    font-family: sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    margin: 0 0 0 auto;
-  }
-  .responses-block-header > label > span {
-    padding: 0 10px 0 0;
-  }
-  .opblock-body select {
-    min-width: 230px;
-  }
-  .responses-container {
-    padding: 20px;
-  }
-  .response-col_status {
-    color: #3b4151;
-    font-family: sans-serif;
-    font-size: 14px;
-  }
-  .response-col_description {
-    width: 99%;
-  }
   .headers-wrapper .headers__title {
-    color: #3b4151;
+    color: #6d747d;
     font-family: sans-serif;
     font-size: 12px;
     margin: 10px 0 5px;
   }
   table.headers td {
-    color: #3b4151;
+    color: #6d747d;
     font-family: monospace;
     font-size: 12px;
     font-weight: 300;
-    font-weight: 600;
-    vertical-align: middle;
+    vertical-align: top;
+  }
+  table.headers td:last-child {
+    color: white;
+    font-family: "Roboto mono";
+    font-weight: 200;
+    font-size: 10px;
   }
 </style>

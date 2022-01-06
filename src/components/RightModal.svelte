@@ -51,7 +51,8 @@
     top: 0;
     right: 0;
     z-index: 1000;
-    overflow: scroll;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
