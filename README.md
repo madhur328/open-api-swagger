@@ -1,4 +1,4 @@
-Creates Interactive Documentation compliant with open-api specs for your api using open-api-swagger
+Creates Interactive Documentation compliant with open-api specs for your Api
 
 # svelte app
 
